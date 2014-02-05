@@ -16,7 +16,7 @@
 @property (readonly) NSInteger scoreAfterFinalJeopardy;
 @property (readonly) BOOL answeredFinalJeopardyCorrectly;
 
-@property (readonly) NSUInteger wager;
+@property (readonly) NSInteger wager;
 
 @property (readonly) NSDictionary *dictionaryRepresentation;
 

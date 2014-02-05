@@ -54,16 +54,27 @@
     return self;
 }
 
+- (BOOL)isEqual:(id)object
+{
+    JeopardyPlayer *otherPlayer = object;
+    return self.playerID == otherPlayer.playerID && [self.name isEqualToString:otherPlayer.name] && self.scoreAfterDoubleJeopardy == otherPlayer.scoreAfterDoubleJeopardy && self.scoreAfterFinalJeopardy == otherPlayer.scoreAfterFinalJeopardy && self.answeredFinalJeopardyCorrectly == otherPlayer.answeredFinalJeopardyCorrectly;
+}
+
+- (NSUInteger)hash
+{
+    return self.playerID;
+}
+
 #pragma mark - Getters
 
-- (NSUInteger)wager
+- (NSInteger)wager
 {
     return labs(self.scoreAfterFinalJeopardy - self.scoreAfterDoubleJeopardy);
 }
 
 - (NSString*)description
 {
-    return [[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithUnsignedInteger:self.playerID], @"playerid", [NSNumber numberWithInteger:self.scoreAfterFinalJeopardy], @"scoreAfterFinalJeopardy", [NSNumber numberWithInteger:self.scoreAfterDoubleJeopardy], @"scoreAfterDoubleJeopardy", self.name, @"name", [NSNumber numberWithBool:self.answeredFinalJeopardyCorrectly], @"answeredFinalJeopardyCorrectly", nil] description];
+    return self.dictionaryRepresentation.description;
 }
 
 - (NSDictionary*)dictionaryRepresentation

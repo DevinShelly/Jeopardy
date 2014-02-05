@@ -10,22 +10,48 @@
 
 @interface JeopardySeries : NSObject
 
-@property (readonly) NSArray *games;
-@property (readonly) NSUInteger moneyWon;
+@property (readonly) NSOrderedSet *games;
+@property (readonly) NSUInteger winnings;
+@property (readonly) NSUInteger firstPlaceWinnings;
+@property (readonly) NSUInteger secondPlaceWinnings;
+@property (readonly) NSUInteger thirdPlaceWinnings;
 @property (readonly) NSUInteger totalPlayers;
 @property (readonly) CGFloat perPlayerWinnings;
 @property (readonly) NSUInteger numberOfGameWhichEndedInATie;
 
-@property (readonly) JeopardySeries *seriesWithOptimalWinWagering;
-@property (readonly) JeopardySeries *seriesWithOptimalTieWagering;
+@property (readonly) JeopardySeries *optimalWinSeries;
+@property (readonly) JeopardySeries *optimalTieSeries;
 
-@property (readonly) JeopardySeries *seriesConsistingOfLockGames;
-@property (readonly) JeopardySeries *seriesConsistingOfTieGames;
-@property (readonly) JeopardySeries *seriesConsistingOfLockTieGames;
-@property (readonly) JeopardySeries *seriesConsistingOfNonLockOrTieGames;
-@property (readonly) JeopardySeries *seriesConsistingOfGamesWhereTheLeaderPlayedForTheWin;
-@property (readonly) JeopardySeries *seriesConsistingOfGamesWhereTheLeaderPlayedForTheTie;
-@property (readonly) JeopardySeries *seriesConsistingOfGamesWhereTheLeaderPlayedForTheLoss;
+@property (readonly) JeopardySeries *lockSeries;
+@property (readonly) JeopardySeries *tieSeries;
+@property (readonly) JeopardySeries *lockTieSeries;
+@property (readonly) JeopardySeries *nonLockOrTieSeries;
+
+@property (readonly) JeopardySeries *firstPlacePlayedForTheWinSeries;
+@property (readonly) JeopardySeries *firstPlacePlayedForTheTieSeries;
+@property (readonly) JeopardySeries *firstPlacePlayedForTheLossSeries;
+
+@property (readonly) JeopardySeries *firstPlaceWonSeries;
+@property (readonly) JeopardySeries *secondPlaceWonSeries;
+@property (readonly) JeopardySeries *thirdPlaceWonSeries;
+
+@property (readonly) JeopardySeries *firstPlaceLostSeries;
+@property (readonly) JeopardySeries *secondPlaceLostSeries;
+@property (readonly) JeopardySeries *thirdPlaceLostSeries;
+
+@property (readonly) JeopardySeries *firstPlaceCorrectSeries;
+@property (readonly) JeopardySeries *secondPlaceCorrectSeries;
+@property (readonly) JeopardySeries *thirdPlaceCorrectSeries;
+
+@property (readonly) JeopardySeries *firstPlaceIncorrectSeries;
+@property (readonly) JeopardySeries *secondPlaceIncorrectSeries;
+@property (readonly) JeopardySeries *thirdPlaceIncorrectSeries;
+
+@property (readonly) JeopardySeries *thirdPlacePlayedFinalJeopardySeries;
+@property (readonly) JeopardySeries *thirdPlaceExistedSeries;
+
+@property (readonly) JeopardySeries *randomizedSeries;
+@property (readonly) JeopardySeries *continuousSeries;
 
 @property (readonly) CGFloat firstPlaceAnswerPercentage;
 @property (readonly) CGFloat secondPlaceAnswerPercentage;
@@ -34,10 +60,20 @@
 @property (readonly) CGFloat secondPlaceWinPercentage;
 @property (readonly) CGFloat thirdPlaceWinPercentage;
 
-@property (readonly) NSArray *arrayRepresentation;
+@property (nonatomic) BOOL thirdPlaceShouldCooperate;
+
+@property (readonly) NSDictionary *playerWinnings;
 
 + (JeopardySeries*)seriesFromJSONFile:(NSString*)jsonFilepath;
-+ (JeopardySeries*)seriesWithGames:(NSArray*)games;
++ (JeopardySeries*)seriesWithGames:(NSOrderedSet*)games;
 - (void)writeJSONToFile:(NSString*)filePath;
+
+- (JeopardySeries*)filteredSeriesUsingPredicate:(NSPredicate*)predicate;
+
+- (JeopardySeries*)seriesByUnioningSeries:(JeopardySeries*)series;
+- (JeopardySeries*)seriesByMinusingSeries:(JeopardySeries*)series;
+- (JeopardySeries*)seriesByIntersectingSeries:(JeopardySeries*)series;
+
+- (JeopardySeries*)playerSeries:(NSUInteger)playerid;
 
 @end

@@ -28,7 +28,7 @@
 @synthesize runnersUp = _runnersUp;
 @synthesize thirdPlacePlayer = _thirdPlacePlayer;
 
-@synthesize leadersAfterDoubleJeopardy = _leadersAfterDoubleJeopardy;
+@synthesize firstPlacePlayersAfterDoubleJeopardy = _firstPlacePlayersAfterDoubleJeopardy;
 @synthesize secondPlacePlayersAfterDoubleJeopardy = _secondPlacePlayersAfterDoubleJeopardy;
 @synthesize thirdPlacePlayerAfterDoubleJeopardy = _thirdPlacePlayerAfterDoubleJeopardy;
 
@@ -64,6 +64,17 @@
     return self;
 }
 
+- (BOOL)isEqual:(id)object
+{
+    JeopardyGame *otherGame = object;
+    return self.gameID == otherGame.gameID && [self.date isEqualToString:otherGame.date] && [self.players isEqualToArray:otherGame.players];
+}
+
+- (NSUInteger)hash
+{
+    return self.gameID;
+}
+
 - (BOOL)containsPlayer:(NSUInteger)playerID
 {
     for (JeopardyPlayer *player in self.players)
@@ -77,7 +88,94 @@
     return NO;
 }
 
-#pragma mark - Final Jeopardy
+#pragma mark - Getters
+
+- (NSDictionary*)dictionaryRepresentation
+{
+    NSMutableArray *players = [NSMutableArray arrayWithCapacity:3];
+    for (JeopardyPlayer *player in self.players)
+    {
+        [players addObject:player.dictionaryRepresentation];
+    }
+    NSNumber *gameid = [NSNumber numberWithUnsignedInteger:self.gameID];
+    return [NSDictionary dictionaryWithObjectsAndKeys:gameid, @"gameid", self.date, @"date", players, @"players", nil];
+}
+
+- (NSString*)description
+{
+    return self.dictionaryRepresentation.description;
+}
+
+#pragma mark Double Jeopardy
+
+- (NSArray*)sortedDoubleJeopardyPlayers
+{
+    if (!_sortedDoubleJeopardyPlayers)
+    {
+        _sortedDoubleJeopardyPlayers = [self.players sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
+            if ([obj1 scoreAfterDoubleJeopardy] > [obj2 scoreAfterDoubleJeopardy])
+            {
+                return NSOrderedAscending;
+            }
+            else if ([obj1 scoreAfterDoubleJeopardy] < [obj2 scoreAfterDoubleJeopardy])
+            {
+                return NSOrderedDescending;
+            }
+            
+            return NSOrderedSame;
+        }];
+    }
+    
+    return _sortedDoubleJeopardyPlayers;
+}
+
+- (NSArray*)firstPlacePlayersAfterDoubleJeopardy
+{
+    if (!_firstPlacePlayersAfterDoubleJeopardy)
+    {
+        NSPredicate *predicate = [NSPredicate predicateWithBlock:^BOOL(id evaluatedObject, NSDictionary *bindings) {
+            return [evaluatedObject scoreAfterDoubleJeopardy] >= [[self.sortedDoubleJeopardyPlayers objectAtIndex:0] scoreAfterDoubleJeopardy];
+        }];
+        _firstPlacePlayersAfterDoubleJeopardy = [self.sortedDoubleJeopardyPlayers filteredArrayUsingPredicate:predicate];
+    }
+    
+    return _firstPlacePlayersAfterDoubleJeopardy;
+}
+
+- (NSArray*)secondPlacePlayersAfterDoubleJeopardy
+{
+    if (!_secondPlacePlayersAfterDoubleJeopardy)
+    {
+        NSMutableArray *array = [NSMutableArray arrayWithArray:self.sortedDoubleJeopardyPlayers];
+        [array removeObjectsInArray:self.firstPlacePlayersAfterDoubleJeopardy];
+        
+        if (array.count>1)
+        {
+            JeopardyPlayer *firstPlayer = [array objectAtIndex:0];
+            JeopardyPlayer *secondPlayer = array.lastObject;
+            if (secondPlayer.scoreAfterDoubleJeopardy != firstPlayer.scoreAfterDoubleJeopardy)
+            {
+                [array removeLastObject];
+            }
+        }
+        
+        _secondPlacePlayersAfterDoubleJeopardy = array;
+    }
+    
+    return _secondPlacePlayersAfterDoubleJeopardy;
+}
+
+- (JeopardyPlayer*)thirdPlacePlayerAfterDoubleJeopardy
+{
+    if (self.firstPlacePlayersAfterDoubleJeopardy.count + self.secondPlacePlayersAfterDoubleJeopardy.count == 3)
+    {
+        return nil;
+    }
+    
+    return self.sortedDoubleJeopardyPlayers.lastObject;
+}
+
+#pragma mark Final Jeopardy
 - (NSArray*)sortedFinalJeopardyPlayers
 {
     if (!_sortedFinalJeopardyPlayers)
@@ -107,7 +205,7 @@
             return NSOrderedSame;
         }];
     }
-        
+    
     return _sortedFinalJeopardyPlayers;
 }
 
@@ -173,86 +271,126 @@
     return [self.winners containsObject:player] ? 1 : [self.runnersUp containsObject:player] ? 2 : self.thirdPlacePlayer == player ? 3 : NSNotFound;
 }
 
-#pragma mark - Double Jeopardy
-
-- (NSArray*)sortedDoubleJeopardyPlayers
+- (NSUInteger)winningsForPlayer:(JeopardyPlayer *)player
 {
-    if (!_sortedDoubleJeopardyPlayers)
-    {
-        _sortedDoubleJeopardyPlayers = [self.players sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
-            if ([obj1 scoreAfterDoubleJeopardy] > [obj2 scoreAfterDoubleJeopardy])
-            {
-                return NSOrderedAscending;
-            }
-            else if ([obj1 scoreAfterDoubleJeopardy] < [obj2 scoreAfterDoubleJeopardy])
-            {
-                return NSOrderedDescending;
-            }
-            
-            return NSOrderedSame;
-        }];
-    }
-    
-    return _sortedDoubleJeopardyPlayers;
+    NSUInteger finalPosition = [self finalPositionOfPlayer:player];
+    return finalPosition == 1 ? player.scoreAfterFinalJeopardy : finalPosition == 2 ? 2000 : 1000;
 }
 
-- (NSArray*)leadersAfterDoubleJeopardy
+- (BOOL)firstPlaceWon
 {
-    if (!_leadersAfterDoubleJeopardy)
+    for (JeopardyPlayer *first in self.firstPlacePlayersAfterDoubleJeopardy)
     {
-        NSPredicate *predicate = [NSPredicate predicateWithBlock:^BOOL(id evaluatedObject, NSDictionary *bindings) {
-            return [evaluatedObject scoreAfterDoubleJeopardy] >= [[self.sortedDoubleJeopardyPlayers objectAtIndex:0] scoreAfterDoubleJeopardy];
-        }];
-        _leadersAfterDoubleJeopardy = [self.sortedDoubleJeopardyPlayers filteredArrayUsingPredicate:predicate];
-    }
-    
-    return _leadersAfterDoubleJeopardy;
-}
-
-- (NSArray*)secondPlacePlayersAfterDoubleJeopardy
-{
-    if (!_secondPlacePlayersAfterDoubleJeopardy)
-    {
-        NSMutableArray *array = [NSMutableArray arrayWithArray:self.sortedDoubleJeopardyPlayers];
-        [array removeObjectsInArray:self.leadersAfterDoubleJeopardy];
-        
-        if (array.count>1)
+        if ([self.winners containsObject:first])
         {
-            JeopardyPlayer *firstPlayer = [array objectAtIndex:0];
-            JeopardyPlayer *secondPlayer = array.lastObject;
-            if (secondPlayer.scoreAfterDoubleJeopardy != firstPlayer.scoreAfterDoubleJeopardy)
-            {
-                [array removeLastObject];
-            }
+            return YES;
         }
-        
-        _secondPlacePlayersAfterDoubleJeopardy = array;
     }
     
-    return _secondPlacePlayersAfterDoubleJeopardy;
+    return NO;
 }
 
-- (JeopardyPlayer*)thirdPlacePlayerAfterDoubleJeopardy
+- (BOOL) secondPlaceWon
 {
-    if (self.leadersAfterDoubleJeopardy.count + self.secondPlacePlayersAfterDoubleJeopardy.count == 3)
+    for (JeopardyPlayer *second in self.secondPlacePlayersAfterDoubleJeopardy)
     {
-        return nil;
+        if ([self.winners containsObject:second])
+        {
+            return YES;
+        }
     }
     
-    return self.sortedDoubleJeopardyPlayers.lastObject;
+    return NO;
 }
 
-#pragma mark - Optimal Wagering
+- (BOOL)thirdPlaceCanWinDoubleStumper
+{
+    for (JeopardyPlayer *firstPlace in self.firstPlacePlayersAfterDoubleJeopardy)
+    {
+        if (self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy * 2 < firstPlace.scoreAfterDoubleJeopardy - firstPlace.wager)
+        {
+            return NO;
+        }
+    }
+    
+    for (JeopardyPlayer *secondPlace in self.secondPlacePlayersAfterDoubleJeopardy)
+    {
+        if (self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy * 2 < secondPlace.scoreAfterDoubleJeopardy - secondPlace.wager)
+        {
+            return NO;
+        }
+    }
+    
+    return YES;
+}
 
+- (BOOL)thirdPlaceCanWinTripleStumper
+{
+    for (JeopardyPlayer *firstPlace in self.firstPlacePlayersAfterDoubleJeopardy)
+    {
+        if (self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy < firstPlace.scoreAfterDoubleJeopardy - firstPlace.wager)
+        {
+            return NO;
+        }
+    }
+    
+    for (JeopardyPlayer *secondPlace in self.secondPlacePlayersAfterDoubleJeopardy)
+    {
+        if (self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy  < secondPlace.scoreAfterDoubleJeopardy - secondPlace.wager)
+        {
+            return NO;
+        }
+    }
+    
+    return YES;
+}
+
+- (BOOL)thirdPlaceMustAnswerCorrectlyToWin
+{
+    return self.thirdPlaceCanWinDoubleStumper && !self.thirdPlaceCanWinTripleStumper;
+}
+
+- (BOOL)thirdPlaceWon
+{
+    return [self.winners containsObject:self.thirdPlacePlayerAfterDoubleJeopardy];
+}
+
+#pragma mark Types Of Games
+
+- (BOOL)isLockGame
+{
+    JeopardyPlayer *leader = self.firstPlacePlayersAfterDoubleJeopardy.lastObject;
+    JeopardyPlayer *second = self.secondPlacePlayersAfterDoubleJeopardy.lastObject;
+    return !self.isTieGame && leader.scoreAfterDoubleJeopardy > second.scoreAfterDoubleJeopardy * 2;
+}
+
+- (BOOL)isTieGame
+{
+    return self.firstPlacePlayersAfterDoubleJeopardy.count > 1;
+}
+
+- (BOOL)isLockTieGame
+{
+    JeopardyPlayer *leader = self.firstPlacePlayersAfterDoubleJeopardy.lastObject;
+    JeopardyPlayer *second = self.secondPlacePlayersAfterDoubleJeopardy.lastObject;
+    return !self.isTieGame && leader.scoreAfterDoubleJeopardy == second.scoreAfterDoubleJeopardy*2;
+}
+
+- (BOOL)isNonTieOrLockGame
+{
+    return !self.isTieGame && !self.isLockGame && !self.isLockTieGame;
+}
+
+#pragma mark Optimal Tie Wagering
 - (NSUInteger)optimalTieWagerForLeader
 {
-    JeopardyPlayer *leader = self.leadersAfterDoubleJeopardy.lastObject;
+    JeopardyPlayer *leader = self.firstPlacePlayersAfterDoubleJeopardy.lastObject;
     JeopardyPlayer *secondPlace = self.secondPlacePlayersAfterDoubleJeopardy.lastObject;
     
     /* Tied at the end of DJ, wager it all */
-    if (self.leadersAfterDoubleJeopardy.count > 1)
+    if (self.firstPlacePlayersAfterDoubleJeopardy.count > 1)
     {
-        return [self.leadersAfterDoubleJeopardy.lastObject scoreAfterDoubleJeopardy];
+        return [self.firstPlacePlayersAfterDoubleJeopardy.lastObject scoreAfterDoubleJeopardy];
     }
     /* Lock game, wager enough for the tie */
     else if (leader.scoreAfterDoubleJeopardy - secondPlace.scoreAfterDoubleJeopardy*2 > 0)
@@ -267,7 +405,7 @@
 - (NSUInteger)optimalTieWagerForSecondPlace
 {
     /* If there is a tie for first place, both players will have to bet it all. Therefore, bet zero since you will also be likely to miss on a triple stumper  */
-    if (self.leadersAfterDoubleJeopardy.count > 1)
+    if (self.firstPlacePlayersAfterDoubleJeopardy.count > 1)
     {
         return 0;
     }
@@ -278,14 +416,30 @@
 
 - (NSUInteger)optimalTieWagerForThirdPlace
 {
-    JeopardyPlayer *leader = [self leadersAfterDoubleJeopardy].lastObject;
+    JeopardyPlayer *leader = [self firstPlacePlayersAfterDoubleJeopardy].lastObject;
     NSUInteger leaderWager = [self optimalTieWagerForLeader];
     NSInteger leaderScoreAfterMiss = leader.scoreAfterDoubleJeopardy - leaderWager;
+    BOOL thirdPlayerNeedsToAnswerCorrectly = self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy < leaderScoreAfterMiss;
+    BOOL thirdPlayerCanWin = self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy * 2 >= leaderScoreAfterMiss;
+    BOOL thirdPlayerCanTie = self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy * 2 == leaderScoreAfterMiss;
     
-    /* If we can catch the leader after a miss, bet enough for the tie, otherwise, bet 0 to ensure second place should second place miss */
-    if (self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy * 2 >= leaderScoreAfterMiss)
+    if (thirdPlayerCanTie)
     {
-        return leaderScoreAfterMiss - self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy;
+        return self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy;
+    }
+    else if (thirdPlayerNeedsToAnswerCorrectly && thirdPlayerCanWin)
+    {
+        if (self.thirdPlaceShouldCooperate)
+        {
+            return leaderScoreAfterMiss - self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy;
+        }
+        
+        return self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy-1;
+        
+    }
+    else if (thirdPlayerCanWin && self.thirdPlaceShouldCooperate)
+    {
+        return self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy - leaderScoreAfterMiss;
     }
     
     return 0;
@@ -293,7 +447,7 @@
 
 - (NSUInteger)optimalTieWagerForPlayer:(JeopardyPlayer *)player
 {
-    if ([self.leadersAfterDoubleJeopardy containsObject:player])
+    if ([self.firstPlacePlayersAfterDoubleJeopardy containsObject:player])
     {
         return [self optimalTieWagerForLeader];
     }
@@ -305,9 +459,36 @@
     return [self optimalTieWagerForThirdPlace];
 }
 
+- (BOOL)playerDidBetOptimallyForTie:(JeopardyPlayer*)player
+{
+    return player.wager == [self optimalTieWagerForPlayer:player];
+}
+
+- (JeopardyGame*)optimalTieGame
+{
+    
+    NSMutableArray *optimalPlayers = [NSMutableArray array];
+    NSUInteger podiumPosition = 0;
+    for (JeopardyPlayer *player in self.players)
+    {
+        NSUInteger optimalWager = [self optimalTieWagerForPlayer:player];
+        NSInteger newFinalScore = player.answeredFinalJeopardyCorrectly ? player.scoreAfterDoubleJeopardy + optimalWager : player.scoreAfterDoubleJeopardy - optimalWager;
+        
+        JeopardyPlayer *optimumPlayer = [JeopardyPlayer jeopardyPlayerWithID:player.playerID name:player.name scoreAfterDoubleJeopardy:player.scoreAfterDoubleJeopardy scoreAfterFinalJeopardy:newFinalScore andAnsweredFinalJeopardyCorrectly:player.answeredFinalJeopardyCorrectly];
+        [optimalPlayers addObject:optimumPlayer];
+        podiumPosition++;
+    }
+    
+    JeopardyGame *optimalGame = [JeopardyGame gameWithPlayers:optimalPlayers gameID:self.gameID andDate:self.date];
+    
+    return optimalGame;
+}
+
+#pragma mark Optimal Win Wagering
+
 - (NSUInteger)optimalWinWagerForLeader
 {
-    JeopardyPlayer *leader = self.leadersAfterDoubleJeopardy.lastObject;
+    JeopardyPlayer *leader = self.firstPlacePlayersAfterDoubleJeopardy.lastObject;
     JeopardyPlayer *secondPlace = self.secondPlacePlayersAfterDoubleJeopardy.lastObject;
     
     /* Leader is well over 50% in a lock game, so bet the max while still guaranteeing a win */
@@ -331,7 +512,7 @@
 
 - (NSUInteger)optimalWinWagerForSecondPlace
 {
-    JeopardyPlayer *leader = self.leadersAfterDoubleJeopardy.lastObject;
+    JeopardyPlayer *leader = self.firstPlacePlayersAfterDoubleJeopardy.lastObject;
     JeopardyPlayer *secondPlace = self.secondPlacePlayersAfterDoubleJeopardy.lastObject;
     JeopardyPlayer *thirdPlace  = self.thirdPlacePlayerAfterDoubleJeopardy;
     
@@ -369,7 +550,7 @@
 
 - (NSUInteger)optimalWinWagerForThirdPlace
 {
-    NSInteger leaderScoreAfterMiss = [self.leadersAfterDoubleJeopardy.lastObject scoreAfterDoubleJeopardy] - [self optimalWinWagerForLeader];
+    NSInteger leaderScoreAfterMiss = [self.firstPlacePlayersAfterDoubleJeopardy.lastObject scoreAfterDoubleJeopardy] - [self optimalWinWagerForLeader];
     NSInteger secondScoreAfterMiss = [self.secondPlacePlayersAfterDoubleJeopardy.lastObject scoreAfterDoubleJeopardy] - [self optimalTieWagerForSecondPlace];
     NSInteger scoreToBeatAfterTwoMisses = MAX(leaderScoreAfterMiss, secondScoreAfterMiss);
     NSInteger secondScoreToBeatAfterTwoMisses = MIN(leaderScoreAfterMiss, secondScoreAfterMiss);
@@ -403,7 +584,7 @@
 
 - (NSUInteger)optimalWinWagerForPlayer:(JeopardyPlayer *)player
 {
-    if ([self.leadersAfterDoubleJeopardy containsObject:player])
+    if ([self.firstPlacePlayersAfterDoubleJeopardy containsObject:player])
     {
         return [self optimalWinWagerForLeader];
     }
@@ -415,16 +596,12 @@
     return [self optimalWinWagerForThirdPlace];
 }
 
-- (BOOL)playerDidBetOptimallyForTie:(JeopardyPlayer*)player
-{
-    return player.wager == [self optimalTieWagerForPlayer:player];
-}
 - (BOOL)playerDidBetOptimallyForWin:(JeopardyPlayer*)player
 {
     return player.wager == [self optimalWinWagerForPlayer:player];
 }
 
-- (JeopardyGame*)gameWithOptimalWinBetting
+- (JeopardyGame*)optimalWinGame
 {
     NSMutableArray *optimalPlayers = [NSMutableArray array];
     NSUInteger podiumPosition = 0;
@@ -432,114 +609,14 @@
     {
         NSUInteger optimalWager = [self optimalWinWagerForPlayer:player];
         NSInteger newFinalScore = player.answeredFinalJeopardyCorrectly ? player.scoreAfterDoubleJeopardy + optimalWager : player.scoreAfterDoubleJeopardy - optimalWager;
-        NSUInteger optimumPlayerID = self.nextNewPlayerid;
-        NSString *optimumPlayerName = [NSString stringWithFormat:@"#%lu", optimumPlayerID];
-        if (podiumPosition < self.previousWinners.count)
-        {
-            optimumPlayerID = [[self.previousWinners objectAtIndex:podiumPosition] playerID];
-            optimumPlayerName = [[self.previousWinners objectAtIndex:podiumPosition] name];
-        }
-        else
-        {
-            self.nextNewPlayerid++;
-        }
         
-        JeopardyPlayer *optimumPlayer = [JeopardyPlayer jeopardyPlayerWithID:optimumPlayerID name:optimumPlayerName scoreAfterDoubleJeopardy:player.scoreAfterDoubleJeopardy scoreAfterFinalJeopardy:newFinalScore andAnsweredFinalJeopardyCorrectly:player.answeredFinalJeopardyCorrectly];
+        JeopardyPlayer *optimumPlayer = [JeopardyPlayer jeopardyPlayerWithID:player.playerID name:player.name scoreAfterDoubleJeopardy:player.scoreAfterDoubleJeopardy scoreAfterFinalJeopardy:newFinalScore andAnsweredFinalJeopardyCorrectly:player.answeredFinalJeopardyCorrectly];
         [optimalPlayers addObject:optimumPlayer];
         podiumPosition++;
     }
     
     JeopardyGame *optimalGame = [JeopardyGame gameWithPlayers:optimalPlayers gameID:self.gameID andDate:self.date];
-    optimalGame.nextNewPlayerid = self.nextNewPlayerid;
-    optimalGame.previousWinners = self.previousWinners;
     return optimalGame;
-}
-
-- (JeopardyGame*)gameWithOptimalTieBetting
-{
-    
-    NSMutableArray *optimalPlayers = [NSMutableArray array];
-    NSUInteger podiumPosition = 0;
-    for (JeopardyPlayer *player in self.players)
-    {
-        NSUInteger optimalWager = [self optimalTieWagerForPlayer:player];
-        NSInteger newFinalScore = player.answeredFinalJeopardyCorrectly ? player.scoreAfterDoubleJeopardy + optimalWager : player.scoreAfterDoubleJeopardy - optimalWager;
-        NSUInteger optimumPlayerID = self.nextNewPlayerid;
-        NSString *optimumPlayerName = [NSString stringWithFormat:@"#%lu", optimumPlayerID];
-        if (podiumPosition < self.previousWinners.count)
-        {
-            optimumPlayerID = [[self.previousWinners objectAtIndex:podiumPosition] playerID];
-            optimumPlayerName = [[self.previousWinners objectAtIndex:podiumPosition] name];
-        }
-        else
-        {
-            self.nextNewPlayerid++;
-        }
-        
-        JeopardyPlayer *optimumPlayer = [JeopardyPlayer jeopardyPlayerWithID:optimumPlayerID name:optimumPlayerName scoreAfterDoubleJeopardy:player.scoreAfterDoubleJeopardy scoreAfterFinalJeopardy:newFinalScore andAnsweredFinalJeopardyCorrectly:player.answeredFinalJeopardyCorrectly];
-        [optimalPlayers addObject:optimumPlayer];
-        podiumPosition++;
-    }
-    
-    JeopardyGame *optimalGame = [JeopardyGame gameWithPlayers:optimalPlayers gameID:self.gameID andDate:self.date];
-    optimalGame.nextNewPlayerid = self.nextNewPlayerid;
-    optimalGame.previousWinners = self.previousWinners;
-    return optimalGame;
-}
-
-#pragma mark - Getters
-
-- (NSDictionary*)dictionaryRepresentation
-{
-    NSMutableArray *players = [NSMutableArray arrayWithCapacity:3];
-    for (JeopardyPlayer *player in self.players)
-    {
-        [players addObject:player.dictionaryRepresentation];
-    }
-    NSNumber *gameid = [NSNumber numberWithUnsignedInteger:self.gameID];
-    return [NSDictionary dictionaryWithObjectsAndKeys:gameid, @"gameid", self.date, @"date", players, @"players", nil];
-}
-
-- (NSString*)description
-{
-    NSMutableArray *playersInOrderOfDJScores = self.leadersAfterDoubleJeopardy.mutableCopy;
-    [playersInOrderOfDJScores addObjectsFromArray:self.secondPlacePlayersAfterDoubleJeopardy];
-    if (self.thirdPlacePlayerAfterDoubleJeopardy)
-    {
-        [playersInOrderOfDJScores addObject:self.thirdPlacePlayerAfterDoubleJeopardy];
-    }
-    
-    return [[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithUnsignedInteger:self.gameID], @"gameid", self.date, @"date", self.players, @"players", nil] description];
-}
-
-- (BOOL)isLockGame
-{
-    return !self.isTieGame && [self.leadersAfterDoubleJeopardy.lastObject scoreAfterDoubleJeopardy] > [self.secondPlacePlayersAfterDoubleJeopardy.lastObject scoreAfterDoubleJeopardy]* 2;
-}
-
-- (BOOL)isTieGame
-{
-    return self.leadersAfterDoubleJeopardy.count > 1;
-}
-
-- (BOOL)isNonTieOrLockGame
-{
-    return !self.isTieGame && !self.isLockGame && !self.isLockTieGame;
-}
-
-- (BOOL)isLockTieGame
-{
-    return [self.leadersAfterDoubleJeopardy.lastObject scoreAfterDoubleJeopardy] - [self.secondPlacePlayersAfterDoubleJeopardy.lastObject scoreAfterDoubleJeopardy] == [self.secondPlacePlayersAfterDoubleJeopardy.lastObject scoreAfterDoubleJeopardy];
-}
-- (NSArray*)previousWinners
-{
-    /* These three games feature no returning winners. The first two are due to gaps in the j-archive, the third is due to Priscilla Ball withdrawing due to illness. She returns under a new playerid later, so her second appearance is treated as a new player both in the real games and any hypothetical game */
-    if (self.gameID == 1065585600 || self.gameID == 1073278800 || self.gameID == 1232341200)
-    {
-        return [NSArray array];
-    }
-    
-    return _previousWinners;
 }
 
 @end
