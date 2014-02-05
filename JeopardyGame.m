@@ -488,18 +488,19 @@
 
 - (NSUInteger)optimalWinWagerForLeader
 {
-    JeopardyPlayer *leader = self.firstPlacePlayersAfterDoubleJeopardy.lastObject;
+    JeopardyPlayer *firstPlace = self.firstPlacePlayersAfterDoubleJeopardy.lastObject;
     JeopardyPlayer *secondPlace = self.secondPlacePlayersAfterDoubleJeopardy.lastObject;
+    JeopardyPlayer *thirdPlace = self.thirdPlacePlayerAfterDoubleJeopardy;
     
     /* Leader is well over 50% in a lock game, so bet the max while still guaranteeing a win */
     if (self.isLockGame)
     {
-        return leader.scoreAfterDoubleJeopardy - secondPlace.scoreAfterDoubleJeopardy*2 - 1;
+        return firstPlace.scoreAfterDoubleJeopardy - secondPlace.scoreAfterDoubleJeopardy*2 - 1;
     }
     
     if (self.isTieGame)
     {
-        return leader.scoreAfterDoubleJeopardy;
+        return firstPlace.scoreAfterDoubleJeopardy;
     }
     
     if (self.isLockTieGame)
@@ -507,7 +508,20 @@
         return 0;
     }
     
-    return secondPlace.scoreAfterDoubleJeopardy*2 - leader.scoreAfterDoubleJeopardy + 1;
+    NSInteger firstWager = secondPlace.scoreAfterDoubleJeopardy*2 - firstPlace.scoreAfterDoubleJeopardy + 1;
+    NSInteger firstScoreAfterMiss = firstPlace.scoreAfterDoubleJeopardy - firstWager;
+    NSInteger thirdPlaceDoubleUp = thirdPlace.scoreAfterDoubleJeopardy * 2;
+    NSInteger secondScoreToBeat = MAX(firstScoreAfterMiss, thirdPlaceDoubleUp);
+    NSInteger secondWager = secondScoreToBeat > secondPlace.scoreAfterDoubleJeopardy ? secondScoreToBeat - secondPlace.scoreAfterDoubleJeopardy + 1 : secondPlace.scoreAfterDoubleJeopardy*2 - secondScoreToBeat - 1;
+    
+    NSInteger secondScoreAfterMiss = secondPlace.scoreAfterDoubleJeopardy - secondWager;
+    NSInteger thirdScoreToBeat = MAX(firstScoreAfterMiss, secondScoreAfterMiss);
+    NSInteger thirdWager = thirdScoreToBeat > thirdPlace.scoreAfterDoubleJeopardy ? thirdPlace.scoreAfterDoubleJeopardy : 0;
+    NSInteger thirdScoreAfterMiss = thirdPlace.scoreAfterDoubleJeopardy - thirdWager;
+    
+    BOOL firstMustAnswerCorrectly = firstScoreAfterMiss < secondScoreAfterMiss || firstScoreAfterMiss < thirdScoreAfterMiss;
+    
+    return firstMustAnswerCorrectly ? firstPlace.scoreAfterDoubleJeopardy : firstWager;
 }
 
 - (NSUInteger)optimalWinWagerForSecondPlace
@@ -515,20 +529,21 @@
     JeopardyPlayer *leader = self.firstPlacePlayersAfterDoubleJeopardy.lastObject;
     JeopardyPlayer *secondPlace = self.secondPlacePlayersAfterDoubleJeopardy.lastObject;
     JeopardyPlayer *thirdPlace  = self.thirdPlacePlayerAfterDoubleJeopardy;
+    NSInteger thirdPlaceDoubleUp = thirdPlace.scoreAfterDoubleJeopardy*2;
     
     if(self.secondPlacePlayersAfterDoubleJeopardy.count > 1)
     {
         return secondPlace.scoreAfterDoubleJeopardy;
     }
     
-    if (self.isLockGame && thirdPlace.scoreAfterDoubleJeopardy * 2 <= secondPlace.scoreAfterDoubleJeopardy)
+    if (self.isLockGame && thirdPlaceDoubleUp <= secondPlace.scoreAfterDoubleJeopardy)
     {
         return 0;
     }
     
     if (self.isLockGame)
     {
-        return self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy * 2 - [self.secondPlacePlayersAfterDoubleJeopardy.lastObject scoreAfterDoubleJeopardy]+1;
+        return self.thirdPlacePlayerAfterDoubleJeopardy.scoreAfterDoubleJeopardy * 2 - secondPlace.scoreAfterDoubleJeopardy + 1;
     }
     
     if (self.isLockTieGame)
@@ -539,13 +554,10 @@
     NSInteger leaderScoreAfterMiss = leader.scoreAfterDoubleJeopardy - [self optimalWinWagerForLeader];
     NSInteger thirdPlaceDouble = thirdPlace.scoreAfterDoubleJeopardy*2;
     NSInteger scoreToBeat = MAX(leaderScoreAfterMiss, thirdPlaceDouble);
+    NSInteger secondWager = scoreToBeat > secondPlace.scoreAfterDoubleJeopardy ? scoreToBeat - secondPlace.scoreAfterDoubleJeopardy + 1 : secondPlace.scoreAfterDoubleJeopardy - scoreToBeat - 1;
+    NSInteger secondScoreAfterMiss = secondPlace.scoreAfterDoubleJeopardy - secondWager;
     
-    if (secondPlace.scoreAfterDoubleJeopardy >= scoreToBeat)
-    {
-        return 0;
-    }
-    
-    return scoreToBeat - secondPlace.scoreAfterDoubleJeopardy + 1;
+    return secondScoreAfterMiss > leaderScoreAfterMiss ? secondWager : secondPlace.scoreAfterDoubleJeopardy;
 }
 
 - (NSUInteger)optimalWinWagerForThirdPlace

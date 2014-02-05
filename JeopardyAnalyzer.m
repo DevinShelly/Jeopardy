@@ -24,12 +24,19 @@
 {
     NSLog(@"First place answered correctly the following times:");
     NSLog(@"Lock: %lu Tie: %lu Locktie: %lu All Others: %lu Total: %lu", series.lockSeries.firstPlaceCorrectSeries.games.count, series.tieSeries.firstPlaceCorrectSeries.games.count,  series.lockTieSeries.firstPlaceCorrectSeries.games.count, series.nonLockOrTieSeries.firstPlaceCorrectSeries.games.count, series.firstPlaceCorrectSeries.games.count);
+    NSLog(@"First place answered incorrectly the following times:");
+    NSLog(@"Lock: %lu Tie: %lu Locktie: %lu All Others: %lu Total: %lu", series.lockSeries.firstPlaceIncorrectSeries.games.count, series.tieSeries.firstPlaceIncorrectSeries.games.count,  series.lockTieSeries.firstPlaceIncorrectSeries.games.count, series.nonLockOrTieSeries.firstPlaceIncorrectSeries.games.count, series.firstPlaceIncorrectSeries.games.count);
     
-    NSLog(@"Second place answered correctly the following times:");
+    NSLog(@"Second place answered incorrectly the following times:");
     NSLog(@"Lock: %lu Tie: %lu Locktie: %lu All Others: %lu Total: %lu", series.lockSeries.secondPlaceCorrectSeries.games.count, series.tieSeries.secondPlaceCorrectSeries.games.count, series.lockTieSeries.secondPlaceCorrectSeries.games.count, series.nonLockOrTieSeries.secondPlaceCorrectSeries.games.count, series.secondPlaceCorrectSeries.games.count);
+    NSLog(@"Second place answered correctly the following times:");
+    NSLog(@"Lock: %lu Tie: %lu Locktie: %lu All Others: %lu Total: %lu", series.lockSeries.secondPlaceIncorrectSeries.games.count, series.tieSeries.secondPlaceIncorrectSeries.games.count, series.lockTieSeries.secondPlaceIncorrectSeries.games.count, series.nonLockOrTieSeries.secondPlaceIncorrectSeries.games.count, series.secondPlaceCorrectSeries.games.count);
+    
     
     NSLog(@"Third place answered correctly the following times:");
-    NSLog(@"Lock: %lu Tie: %lu Locktie: %lu All Others: %lu Total: %lu\n----------------------------------------------------------------------------------------------------------------------------", series.lockSeries.thirdPlaceCorrectSeries.games.count, series.tieSeries.thirdPlaceCorrectSeries.games.count, series.lockTieSeries.thirdPlaceCorrectSeries.games.count, series.nonLockOrTieSeries.thirdPlaceCorrectSeries.games.count, series.thirdPlaceCorrectSeries.games.count);
+    NSLog(@"Lock: %lu Tie: %lu Locktie: %lu All Others: %lu Total: %lu", series.lockSeries.thirdPlaceCorrectSeries.games.count, series.tieSeries.thirdPlaceCorrectSeries.games.count, series.lockTieSeries.thirdPlaceCorrectSeries.games.count, series.nonLockOrTieSeries.thirdPlaceCorrectSeries.games.count, series.thirdPlaceCorrectSeries.games.count);
+    NSLog(@"Third place answered correctly the following times:");
+    NSLog(@"Lock: %lu Tie: %lu Locktie: %lu All Others: %lu Total: %lu\n----------------------------------------------------------------------------------------------------------------------------", series.lockSeries.thirdPlaceIncorrectSeries.games.count, series.tieSeries.thirdPlaceIncorrectSeries.games.count, series.lockTieSeries.thirdPlaceIncorrectSeries.games.count, series.nonLockOrTieSeries.thirdPlaceIncorrectSeries.games.count, series.thirdPlaceIncorrectSeries.games.count);
 }
 
 - (void)logWinsForSeries:(JeopardySeries*)series
