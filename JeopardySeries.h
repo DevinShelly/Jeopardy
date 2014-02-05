@@ -29,7 +29,7 @@
 @property (readonly) JeopardySeries *nonLockOrTieSeries;
 
 /* Theser refer to game state after Final Jeopardy */
-@property (readonly) JeopardySeries *multipleWinnerSeries;
+@property (readonly) JeopardySeries *multipleWinnersSeries;
 
 @property (readonly) JeopardySeries *firstPlacePlayedForTheWinSeries;
 @property (readonly) JeopardySeries *firstPlacePlayedForTheTieSeries;

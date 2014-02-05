@@ -22,7 +22,7 @@
 
 - (void)logEndGameTiesForSeries:(JeopardySeries*)series
 {
-    NSLog(@"There were %lu ties at the end of Final Jeopardy", series.multipleWinnerSeries.games.count);
+    NSLog(@"There were %lu ties at the end of Final Jeopardy", series.multipleWinnersSeries.games.count);
 }
 
 - (void)logCorrectAnswersForSeries:(JeopardySeries*)series
