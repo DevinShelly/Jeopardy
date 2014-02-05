@@ -22,10 +22,14 @@
 @property (readonly) JeopardySeries *optimalWinSeries;
 @property (readonly) JeopardySeries *optimalTieSeries;
 
+/* These refer to game state after Double Jeopardy */
 @property (readonly) JeopardySeries *lockSeries;
 @property (readonly) JeopardySeries *tieSeries;
 @property (readonly) JeopardySeries *lockTieSeries;
 @property (readonly) JeopardySeries *nonLockOrTieSeries;
+
+/* Theser refer to game state after Final Jeopardy */
+@property (readonly) JeopardySeries *multipleWinnerSeries;
 
 @property (readonly) JeopardySeries *firstPlacePlayedForTheWinSeries;
 @property (readonly) JeopardySeries *firstPlacePlayedForTheTieSeries;

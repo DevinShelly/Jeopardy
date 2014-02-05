@@ -20,6 +20,11 @@
     NSLog(@"Lock: %lu Tie: %lu Locktie: %lu All Others: %lu Total: %lu\n----------------------------------------------------------------------------------------------------------------------------", series.lockSeries.games.count, series.tieSeries.games.count, series.lockTieSeries.games.count, series.nonLockOrTieSeries.games.count, series.games.count);
 }
 
+- (void)logEndGameTiesForSeries:(JeopardySeries*)series
+{
+    NSLog(@"There were %lu ties at the end of Final Jeopardy", series.multipleWinnerSeries.games.count);
+}
+
 - (void)logCorrectAnswersForSeries:(JeopardySeries*)series
 {
     NSLog(@"First place answered correctly the following times:");
@@ -54,6 +59,7 @@
 - (void)logWinningsByPosition:(JeopardySeries*)series
 {
     NSLog(@"Players in first place entering Final Jeopardy won $%lu. Second: $%lu Third: $%lu Total: $%lu", series.firstPlaceWinnings, series.secondPlaceWinnings, series.thirdPlaceWinnings, series.winnings);
+    NSLog(@"Overall, %lu players appeared on Jeopardy! and earned an average of %f dollars", series.totalPlayers, series.perPlayerWinnings);
 }
 
 - (void)logThirdPlaceTotalWinnings:(JeopardySeries*)series
@@ -93,8 +99,6 @@
     NSLog(@"For the following stats, all real life data is used.\n----------------------------------------------------------------------------------------------------------------------------");
     [self logGameTypesForSeries:realLife];
     [self logCorrectAnswersForSeries:realLife];
-    [self logWinsForSeries:realLife];
-    [self logWinningsByPosition:realLife];
     NSLog(@"For the following stats, first place answered correctly.\n----------------------------------------------------------------------------------------------------------------------------");
     [self logCorrectAnswersForSeries:realLife.firstPlaceCorrectSeries];
     [self logWinsForSeries:realLife.firstPlaceCorrectSeries];
@@ -114,21 +118,30 @@
     [self logCorrectAnswersForSeries:realLife.firstPlaceIncorrectSeries.secondPlaceIncorrectSeries];
     [self logWinsForSeries:realLife.firstPlaceIncorrectSeries.secondPlaceIncorrectSeries];
     
+    NSLog(@"For the following stats, all real life data is used.\n----------------------------------------------------------------------------------------------------------------------------");
+    [self logEndGameTiesForSeries:realLife];
+    [self logWinsForSeries:realLife];
+    [self logWinningsByPosition:realLife];
+    [self logThirdPlaceTotalWinnings:realLife];
+    
     NSLog(@"For the following stats, the wagering has been changed so that it follows the tie strategy with third place cooperating.\n----------------------------------------------------------------------------------------------------------------------------");
     realLife.thirdPlaceShouldCooperate = YES;
-    NSLog(@"%hhd", realLife.optimalTieSeries.thirdPlaceShouldCooperate);
+    [self logEndGameTiesForSeries:realLife.optimalTieSeries];
     [self logWinsForSeries:realLife.optimalTieSeries];
     [self logWinningsByPosition:realLife.optimalTieSeries];
     [self logThirdPlaceTotalWinnings:realLife.optimalTieSeries];
     NSLog(@"For the following stats, the wagering has been changed so that it follows the tie strategy with third place not cooperating.\n----------------------------------------------------------------------------------------------------------------------------");
     realLife.thirdPlaceShouldCooperate = NO;
+    [self logEndGameTiesForSeries:realLife.optimalTieSeries];
     [self logWinsForSeries:realLife.optimalTieSeries];
     [self logWinningsByPosition:realLife.optimalTieSeries];
     [self logThirdPlaceTotalWinnings:realLife.optimalTieSeries];
     
     NSLog(@"For the following stats, the wagering has been changed so that it follows the win strategy.\n----------------------------------------------------------------------------------------------------------------------------");
+    [self logEndGameTiesForSeries:realLife.optimalWinSeries];
     [self logWinsForSeries:realLife.optimalWinSeries];
     [self logWinningsByPosition:realLife.optimalWinSeries];
+    [self logThirdPlaceTotalWinnings:realLife.optimalWinSeries];
 }
 
 

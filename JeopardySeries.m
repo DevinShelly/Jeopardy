@@ -23,6 +23,8 @@
 @synthesize nonLockOrTieSeries = _nonLockOrTieSeries;
 @synthesize tieSeries = _tieSeries;
 
+@synthesize multipleWinnerSeries = _multipleWinnerSeries;
+
 @synthesize optimalTieSeries = _optimalTieSeries;
 @synthesize optimalWinSeries = _optimalWinSeries;
 
@@ -156,6 +158,7 @@
 }
 
 #pragma mark Filterd By Game Type
+#pragma mark Double Jeopardy
 - (JeopardySeries*) lockSeries
 {
     if (_lockSeries)
@@ -207,6 +210,23 @@
     }];
     _nonLockOrTieSeries = [self filteredSeriesUsingPredicate:predicate];
     return _nonLockOrTieSeries;
+}
+
+#pragma mark Final Jeopardy
+
+- (JeopardySeries*) multipleWinnerSeries
+{
+    if (_multipleWinnerSeries)
+    {
+        return _multipleWinnerSeries;
+    }
+    
+    NSPredicate *predicate = [NSPredicate predicateWithBlock:^BOOL(id evaluatedObject, NSDictionary *bindings) {
+        JeopardyGame *game = evaluatedObject;
+        return game.winners.count > 1;
+    }];
+    _multipleWinnerSeries = [self filteredSeriesUsingPredicate:predicate];
+    return _multipleWinnerSeries;
 }
 
 #pragma mark Filtered By First Place Strategy
